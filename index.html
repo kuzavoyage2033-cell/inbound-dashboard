@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>訪日外客数ダッシュボード</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <h1>訪日外客数ダッシュボード</h1>
+    <p class="subtitle">出典：日本政府観光局（JNTO）訪日外客統計 ｜ 最終更新：<span id="last-updated">—</span></p>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- コントロールパネル -->
+  <section class="controls-card">
+    <div class="control-row">
+      <div class="control-group">
+        <span class="control-label">比較モード</span>
+        <div class="mode-switch">
+          <button class="btn-mode active" data-mode="monthly">月単位</button>
+          <button class="btn-mode" data-mode="cumulative">累計</button>
+        </div>
+      </div>
+      <div class="control-group" id="period-group">
+        <span class="control-label">期間</span>
+        <div class="period-selector">
+          <select id="start-month" class="select-month hidden"></select>
+          <span id="period-sep" class="period-sep hidden">〜</span>
+          <select id="end-month" class="select-month"></select>
+        </div>
+      </div>
+      <div class="control-group summary-group">
+        <div class="summary-box" id="summary-total-2026">
+          <span class="summary-label">2026年合計</span>
+          <span class="summary-value" id="val-total-2026">—</span>
+        </div>
+        <div class="summary-box" id="summary-yoy">
+          <span class="summary-label">前年比</span>
+          <span class="summary-value" id="val-yoy">—</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 全体推移グラフ -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">全体推移</h2>
+      <div class="view-toggle">
+        <button class="btn-view active" data-view="total">全国合計</button>
+        <button class="btn-view" data-view="country">国別</button>
+        <select id="country-select" class="select-country hidden"></select>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="trend-chart"></canvas>
+    </div>
+  </section>
+
+  <!-- 国別比較グラフ -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">国別比較（棒グラフ）</h2>
+      <span class="card-note" id="bar-label">—</span>
+    </div>
+    <div class="chart-wrap bar-chart-wrap">
+      <div class="bar-scroll">
+        <canvas id="bar-chart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- 国別比較表 -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">国別比較表</h2>
+      <span class="card-note" id="table-label">—</span>
+    </div>
+    <div class="table-wrap">
+      <table id="comparison-table">
+        <thead>
+          <tr>
+            <th class="col-name">国・地域</th>
+            <th class="col-num">2026年</th>
+            <th class="col-num">2025年</th>
+            <th class="col-num">前年比</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>出典：日本政府観光局（JNTO）訪日外客統計 ｜ 本ダッシュボードは内部利用目的のみ</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
