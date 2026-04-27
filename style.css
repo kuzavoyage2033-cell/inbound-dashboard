@@ -267,6 +267,15 @@ body {
 }
 #comparison-table tbody tr:hover { background: var(--gray-50); }
 
+/* 選択中の国行 */
+tr.row-selected td {
+  background: var(--primary-light);
+  font-weight: 600;
+}
+tr.row-selected:hover td {
+  background: #d4e3fc;
+}
+
 /* 合計行 */
 tr.row-total td {
   font-weight: 700;

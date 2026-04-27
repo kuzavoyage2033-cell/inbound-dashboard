@@ -28,6 +28,14 @@
           <button class="btn-mode" data-mode="cumulative">累計</button>
         </div>
       </div>
+      <div class="control-group">
+        <span class="control-label">表示対象</span>
+        <div class="view-toggle">
+          <button class="btn-view active" data-view="total">全国合計</button>
+          <button class="btn-view" data-view="country">国別</button>
+          <select id="country-select" class="select-country hidden"></select>
+        </div>
+      </div>
       <div class="control-group" id="period-group">
         <span class="control-label">期間</span>
         <div class="period-selector">
@@ -52,12 +60,7 @@
   <!-- 全体推移グラフ -->
   <section class="card">
     <div class="card-header">
-      <h2 class="card-title">全体推移</h2>
-      <div class="view-toggle">
-        <button class="btn-view active" data-view="total">全国合計</button>
-        <button class="btn-view" data-view="country">国別</button>
-        <select id="country-select" class="select-country hidden"></select>
-      </div>
+      <h2 class="card-title" id="trend-title">全体推移（全国合計）</h2>
     </div>
     <div class="chart-wrap">
       <canvas id="trend-chart"></canvas>

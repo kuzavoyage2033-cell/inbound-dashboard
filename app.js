@@ -141,7 +141,7 @@ function setupCountrySelect() {
   sel.value = state.trendCountry;
   sel.addEventListener('change', () => {
     state.trendCountry = sel.value;
-    updateTrendChart();
+    updateAll();
   });
 }
 
@@ -171,7 +171,7 @@ function setupViewToggle() {
       state.trendView === 'country'
         ? countrySel.classList.remove('hidden')
         : countrySel.classList.add('hidden');
-      updateTrendChart();
+      updateAll();
     });
   });
 }
@@ -179,14 +179,23 @@ function setupViewToggle() {
 // ─── サマリー更新 ─────────────────────────────────────────────────────────────
 
 function updateSummary() {
-  const { startMonth, endMonth, mode } = state;
-  const v26 = getPeriodValue('総数', '2026', startMonth, endMonth, mode);
-  const v25 = getPeriodValue('総数', '2025', startMonth, endMonth, mode);
+  const { startMonth, endMonth, mode, trendView, trendCountry } = state;
+  const entity = trendView === 'country' ? trendCountry : '総数';
+  const isNew = data.meta.new_in_2026.includes(entity);
+
+  const v26 = getPeriodValue(entity, '2026', startMonth, endMonth, mode);
+  const v25 = isNew ? null : getPeriodValue(entity, '2025', startMonth, endMonth, mode);
+
+  const labelEl = document.querySelector('#summary-total-2026 .summary-label');
+  labelEl.textContent = trendView === 'country' ? `${trendCountry} 2026年` : '2026年合計';
 
   document.getElementById('val-total-2026').textContent = v26 != null ? fmt(v26) + '人' : '—';
 
   const yoyEl = document.getElementById('val-yoy');
-  if (v26 != null && v25 != null && v25 !== 0) {
+  if (isNew) {
+    yoyEl.textContent = '新規';
+    yoyEl.className = 'summary-value';
+  } else if (v26 != null && v25 != null && v25 !== 0) {
     const pct = (v26 - v25) / v25 * 100;
     const sign = pct >= 0 ? '+' : '';
     yoyEl.textContent = `${sign}${pct.toFixed(1)}%`;
@@ -201,6 +210,8 @@ function updateSummary() {
 
 function updateTrendChart() {
   const entity = state.trendView === 'total' ? '総数' : state.trendCountry;
+  const titleEl = document.getElementById('trend-title');
+  if (titleEl) titleEl.textContent = state.trendView === 'total' ? '全体推移（全国合計）' : `全体推移（${state.trendCountry}）`;
 
   const datasets = ['2024', '2025', '2026'].map(year => {
     // 2024/2025は12ヶ月、2026は利用可能月まで
@@ -334,14 +345,17 @@ function updateTable() {
   const tbody = document.querySelector('#comparison-table tbody');
   tbody.innerHTML = '';
 
+  const isCountryMode = state.trendView === 'country';
   const addRow = (entity, label, isTotal) => {
     const v26 = getPeriodValue(entity, '2026', startMonth, endMonth, mode);
     const v25 = getPeriodValue(entity, '2025', startMonth, endMonth, mode);
     const isNew = data.meta.new_in_2026.includes(entity);
+    const isSelected = isCountryMode && entity === state.trendCountry;
     const tr = document.createElement('tr');
     if (isTotal) tr.classList.add('row-total');
+    if (isSelected) tr.classList.add('row-selected');
     tr.innerHTML = `
-      <td class="col-name">${label}</td>
+      <td class="col-name">${isSelected ? '▶ ' : ''}${label}</td>
       <td class="col-num">${fmt(v26)}</td>
       <td class="col-num">${fmt(v25)}</td>
       <td class="col-num">${yoyBadge(v26, v25, isNew)}</td>
