@@ -179,24 +179,29 @@ function setupViewToggle() {
 // ─── サマリー更新 ─────────────────────────────────────────────────────────────
 
 function updateSummary() {
-  const { startMonth, endMonth, mode, trendView, trendCountry } = state;
-  const entity = trendView === 'country' ? trendCountry : '総数';
-  const isNew = data.meta.new_in_2026.includes(entity);
+  const isCountry = state.trendView === 'country';
+  const entity    = isCountry ? state.trendCountry : '総数';
+  const isNew     = data.meta.new_in_2026.includes(entity);
+  const { startMonth, endMonth, mode } = state;
 
+  // ラベル
+  document.querySelector('#summary-total-2026 .summary-label').textContent =
+    isCountry ? state.trendCountry : '訪日客合計';
+
+  // 2026年値
   const v26 = getPeriodValue(entity, '2026', startMonth, endMonth, mode);
-  const v25 = isNew ? null : getPeriodValue(entity, '2025', startMonth, endMonth, mode);
-
-  const labelEl = document.querySelector('#summary-total-2026 .summary-label');
-  labelEl.textContent = trendView === 'country' ? `${trendCountry} 2026年` : '2026年合計';
-
   document.getElementById('val-total-2026').textContent = v26 != null ? fmt(v26) + '人' : '—';
 
+  // 前年比
   const yoyEl = document.getElementById('val-yoy');
   if (isNew) {
     yoyEl.textContent = '新規';
     yoyEl.className = 'summary-value';
-  } else if (v26 != null && v25 != null && v25 !== 0) {
-    const pct = (v26 - v25) / v25 * 100;
+    return;
+  }
+  const v25 = getPeriodValue(entity, '2025', startMonth, endMonth, mode);
+  if (v26 != null && v25 != null && v25 !== 0) {
+    const pct  = (v26 - v25) / v25 * 100;
     const sign = pct >= 0 ? '+' : '';
     yoyEl.textContent = `${sign}${pct.toFixed(1)}%`;
     yoyEl.className = 'summary-value ' + (pct >= 0 ? 'up' : 'down');
