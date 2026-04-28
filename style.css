@@ -223,16 +223,8 @@ body {
   height: 320px;
 }
 .bar-chart-wrap {
-  height: auto;
-  overflow: hidden;
-}
-.bar-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.bar-scroll canvas {
-  min-width: 860px;
-  height: 360px !important;
+  position: relative;
+  height: 380px;
 }
 
 /* ─── Table ─── */

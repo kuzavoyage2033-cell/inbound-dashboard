@@ -307,7 +307,7 @@ function updateBarChart() {
   document.getElementById('bar-label').textContent = `${makePeriodLabel()}（2025年 vs 2026年）`;
 
   const options = {
-    responsive: false,
+    responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
