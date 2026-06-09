@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>インバウンドダッシュボード</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <h1>インバウンドダッシュボード</h1>
+    <p class="subtitle">出典：日本政府観光局（JNTO）訪日外客統計 / 観光庁 宿泊旅行統計調査</p>
+  </div>
+</header>
+
+<!-- タブナビゲーション -->
+<nav class="tab-nav">
+  <div class="tab-nav-inner">
+    <button class="tab-btn active" data-tab="inbound">訪日外客数</button>
+    <button class="tab-btn" data-tab="stay-country">国別宿泊分析</button>
+    <button class="tab-btn" data-tab="stay-pref">都道府県別宿泊分析</button>
+  </div>
+</nav>
+
+<!-- ═══════════════ TAB 1: 訪日外客数 ═══════════════ -->
+<main class="container tab-panel active" id="tab-inbound">
+
+  <!-- コントロールパネル -->
+  <section class="controls-card">
+    <div class="control-row">
+      <div class="control-group">
+        <span class="control-label">国籍</span>
+        <select id="inb-country" class="select-country"></select>
+      </div>
+      <div class="control-group">
+        <span class="control-label">集計単位</span>
+        <div class="mode-switch">
+          <button class="inb-mode-btn btn-mode active" data-mode="monthly">月単位</button>
+          <button class="inb-mode-btn btn-mode" data-mode="cumulative">累計</button>
+          <button class="inb-mode-btn btn-mode" data-mode="annual">年単位</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <span class="control-label">期間</span>
+        <div class="period-selector">
+          <select id="inb-year" class="select-month"></select>
+          <select id="inb-start-month" class="select-month hidden"></select>
+          <span id="inb-period-sep" class="period-sep hidden">〜</span>
+          <select id="inb-end-month" class="select-month"></select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 月次推移グラフ -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title" id="trend-title">月次推移（韓国）</h2>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="trend-chart"></canvas>
+    </div>
+  </section>
+
+  <!-- 国別棒グラフ＋前年比折れ線 -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">国別比較</h2>
+      <span class="card-note" id="bar-label">—</span>
+    </div>
+    <div class="bar-chart-wrap">
+      <canvas id="bar-chart"></canvas>
+    </div>
+  </section>
+
+  <!-- 国別比較表 -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">国別比較表</h2>
+      <span class="card-note" id="table-label">—</span>
+    </div>
+    <div class="table-wrap">
+      <table id="comparison-table">
+        <thead>
+          <tr>
+            <th class="col-name">国・地域</th>
+            <th class="col-num" id="th-year-cur">2026年</th>
+            <th class="col-num" id="th-year-prev">2025年</th>
+            <th class="col-num">シェア</th>
+            <th class="col-bar">構成比</th>
+            <th class="col-num">前年比</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="data-note">最終更新：<span id="last-updated">—</span> ｜ 出典：JNTO訪日外客統計</div>
+</main>
+
+<!-- ═══════════════ TAB 2: 国別宿泊分析 ═══════════════ -->
+<main class="container tab-panel" id="tab-stay-country">
+
+  <!-- コントロールパネル -->
+  <section class="controls-card">
+    <div class="control-row">
+      <div class="control-group">
+        <span class="control-label">国籍</span>
+        <select id="sc-country" class="select-country"></select>
+      </div>
+      <div class="control-group">
+        <span class="control-label">集計単位</span>
+        <div class="mode-switch">
+          <button class="sc-mode-btn btn-mode active" data-mode="annual">年単位</button>
+          <button class="sc-mode-btn btn-mode" data-mode="monthly">月単位</button>
+          <button class="sc-mode-btn btn-mode" data-mode="cumulative">累計</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <span class="control-label">期間</span>
+        <div class="period-selector">
+          <select id="sc-year" class="select-month"></select>
+          <select id="sc-start-month" class="select-month hidden"></select>
+          <span id="sc-period-sep" class="period-sep hidden">〜</span>
+          <select id="sc-end-month" class="select-month hidden"></select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ① 47都道府県 縦棒グラフ -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title" id="sc-bar47-title">47都道府県 宿泊数</h2>
+    </div>
+    <div class="sc-bar47-outer">
+      <div class="sc-bar47-wrap">
+        <canvas id="sc-bar47-chart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ② 1都道府県 年別月次推移 -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title" id="sc-single-title">年別月次推移</h2>
+      <select id="sc-single-pref" class="select-pref"></select>
+    </div>
+    <div class="sc-year-btns">
+      <button class="sc-year-btn btn-view active" data-year="2019">2019年</button>
+      <button class="sc-year-btn btn-view active" data-year="2024">2024年</button>
+      <button class="sc-year-btn btn-view active" data-year="2025">2025年</button>
+      <button class="sc-year-btn btn-view active" data-year="2026">2026年</button>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="sc-single-chart"></canvas>
+    </div>
+  </section>
+
+  <!-- ③ 最大3都道府県 月次比較 -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title" id="sc-line-title">都道府県別 月次推移比較</h2>
+      <div class="pref-selector-row">
+        <select id="sc-pref1" class="select-pref"></select>
+        <select id="sc-pref2" class="select-pref"></select>
+        <select id="sc-pref3" class="select-pref"></select>
+        <select id="sc-line-year" class="select-pref"></select>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="sc-line-chart"></canvas>
+    </div>
+  </section>
+
+  <div class="data-note">最終更新：<span id="sc-updated">—</span> ｜ 出典：観光庁 宿泊旅行統計調査</div>
+</main>
+
+<!-- ═══════════════ TAB 3: 都道府県別宿泊分析 ═══════════════ -->
+<main class="container tab-panel" id="tab-stay-pref">
+
+  <!-- コントロール -->
+  <section class="controls-card">
+    <div class="control-row">
+      <div class="control-group">
+        <span class="control-label">都道府県</span>
+        <select id="sp-pref" class="select-country"></select>
+      </div>
+      <div class="control-group">
+        <span class="control-label">集計単位</span>
+        <div class="mode-switch">
+          <button class="sp-mode-btn btn-mode active" data-mode="annual">年単位</button>
+          <button class="sp-mode-btn btn-mode" data-mode="monthly">月単位</button>
+          <button class="sp-mode-btn btn-mode" data-mode="cumulative">累計</button>
+        </div>
+      </div>
+      <div class="control-group" id="sp-period-group" style="display:none">
+        <span class="control-label">期間</span>
+        <div class="period-selector">
+          <select id="sp-start-month" class="select-month hidden"></select>
+          <span id="sp-period-sep" class="period-sep hidden">〜</span>
+          <select id="sp-end-month" class="select-month"></select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 国籍別割合（横棒グラフ） -->
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title" id="sp-nat-title">国籍別割合</h2>
+      <span class="card-note" id="sp-pie-note">—</span>
+    </div>
+    <div id="sp-nat-wrap" style="position:relative">
+      <canvas id="sp-nat-line-chart"></canvas>
+    </div>
+  </section>
+
+  <div class="data-note">最終更新：<span id="sp-updated">—</span> ｜ 出典：観光庁 宿泊旅行統計調査</div>
+</main>
+
+<footer class="footer">
+  <p>本ダッシュボードは内部利用目的のみ</p>
+</footer>
+
+<script src="app.js?v=3"></script>
+<script src="stay_tab.js?v=3"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# 大容量Excelアーカイブは除外
+archive/
+
+# OS
+.DS_Store
