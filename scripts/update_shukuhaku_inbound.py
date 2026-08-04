@@ -28,8 +28,23 @@ MLIT_URL = "https://www.mlit.go.jp/kankocho/tokei_hakusyo/shukuhakutokei.html"
 BASE_URL = "https://www.mlit.go.jp"
 _BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = _BASE_DIR.parent.parent / "00_観光データ格納庫"
-EXCEL_FILE = str(DATA_DIR / 'raw' / '宿泊旅行統計国籍別都道府県別（参考第１表）インバウンド用（2019,24,25)元データ.xlsx')
 DL_FOLDER = str(DATA_DIR / '宿泊データ自動DL')
+
+def _find_tate_file():
+    """宿泊データ自動DL内の縦持ちファイルを返す（最新日付のもの）"""
+    import re, unicodedata
+    dl_dir = DATA_DIR / '宿泊データ自動DL'
+    files = sorted(
+        p for p in dl_dir.iterdir()
+        if re.match(r'\d{8}_', p.name)
+        and p.name.endswith('.xlsx')
+        and '縦持ち' in unicodedata.normalize('NFC', p.name)
+    )
+    if not files:
+        raise FileNotFoundError("縦持ちファイルが見つかりません: " + str(dl_dir))
+    return str(files[-1])
+
+EXCEL_FILE = _find_tate_file()
 
 NATIONALITY_MAP = {
     "韓国": "韓国", "中国": "中国", "香港": "香港", "台湾": "台湾",
@@ -309,15 +324,22 @@ def verify(new_df, year, month, n=15):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="ファイルを更新せず確認のみ")
+    parser.add_argument("--url", help="ダウンロードURLを直接指定（省略時はMLITから最新を自動取得）")
     args = parser.parse_args()
 
     print("=" * 60)
     print(f"宿泊旅行統計 参考第１表 月次更新スクリプト")
     print(f"実行日時: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"更新対象ファイル: {EXCEL_FILE}")
     print("=" * 60)
 
-    # 1. 最新ファイルURLを取得
-    url, filename = fetch_latest_excel_url()
+    # 1. ファイルURLを決定
+    if args.url:
+        url = args.url
+        filename = args.url.split("/")[-1]
+        print(f"[1] 指定URLを使用: {url}")
+    else:
+        url, filename = fetch_latest_excel_url()
 
     # 2. ダウンロード
     xlsx_bytes = download_excel(url)
