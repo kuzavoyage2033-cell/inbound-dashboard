@@ -237,201 +237,193 @@ function applyPeriodVisibility() {
   }
 }
 
-// ─── 月次推移グラフ ────────────────────────────────────────────────────────────
+// ─── 新ダッシュボード（monthly_report.html）と同じ見せ方 ─────────────────────────
+// 年の色・マーカー：今年＝青●太線、前年＝橙■、前々年＝緑◇白抜き（新ダッシュボードと共通）
+const INB_YEAR_STYLE = [
+  { color: '#2a78d6', pointStyle: 'circle',  hollow: false, r: 4.5, width: 3 },
+  { color: '#eb6834', pointStyle: 'rect',    hollow: false, r: 4,   width: 2 },
+  { color: '#1baf7a', pointStyle: 'rectRot', hollow: true,  r: 4.5, width: 2 },
+];
+const INB_POS = '#2a78d6', INB_NEG = '#e34948';
+const INB_BAR = '#86b6ef', INB_BAR_SEL = '#1c5cab';
+const INB_GRID = '#e1e0d9', INB_AXIS = '#c3c2b7', INB_INK2 = '#52514e';
 
-function updateTrendChart() {
-  const entity  = state.country;
-  const titleEl = document.getElementById('trend-title');
-  if (titleEl) {
-    titleEl.textContent = entity === '総数'
-      ? '月次推移（訪日外客数総数）'
-      : `月次推移（${entity}）`;
-  }
+let yoyChart = null;
+let barYoyChart = null;
 
-  const datasets = ['2024', '2025', '2026'].map(year => {
-    const avail = getAvailableMonths(year);
-    const maxM  = avail.length ? Math.max(...avail) : 0;
-    const values = Array.from({ length: 12 }, (_, i) => {
-      const m = i + 1;
-      if (data.meta.new_in_2026 && data.meta.new_in_2026.includes(entity) && year !== '2026') return null;
-      return m <= maxM ? getMonthly(entity, year, m) : null;
-    });
-    const c = YEAR_COLORS[year];
-    return {
-      label: `${year}年`,
-      data: values,
-      borderColor: c.line,
-      backgroundColor: c.fill,
-      pointBackgroundColor: c.line,
-      borderWidth: 1.5,
-      tension: 0,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-      spanGaps: false,
-      fill: false,
-    };
-  });
+const pctOf = (a, b) => (a == null || !b) ? null : (a / b - 1) * 100;
+const pctTxt = p => p == null ? '—' : `${p >= 0 ? '+' : '△'}${Math.abs(p).toFixed(1)}%`;
+const manTxt = v => v >= 10000 ? (v / 10000).toLocaleString('ja-JP', { maximumFractionDigits: 1 }) + '万' : fmt(v);
 
-  // カスタム凡例を描画（線＋丸）
-  buildCustomLegend('trend-legend', document.getElementById('trend-chart'), datasets);
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
+function inbBaseOptions(extra = {}) {
+  return Object.assign({
+    responsive: true, maintainAspectRatio: false, animation: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => `${ctx.dataset.label}：${ctx.parsed.y != null ? fmt(ctx.parsed.y) + '人' : '—'}`,
-        },
-      },
+      tooltip: { backgroundColor: '#ffffff', titleColor: '#0b0b0b', bodyColor: INB_INK2, borderColor: INB_GRID,
+                 borderWidth: 1, padding: 10, boxPadding: 4, usePointStyle: true },
     },
     scales: {
-      x: {
-        ticks: { font: { size: 11 } },
-        grid:  { color: 'rgba(0,0,0,0.04)' },
-      },
-      y: {
-        beginAtZero: false,
-        ticks: {
-          font: { size: 11 },
-          callback: v => v >= 10000 ? (v / 10000).toFixed(0) + '万' : v.toLocaleString(),
-        },
-        grid: { color: 'rgba(0,0,0,0.04)' },
-      },
+      x: { grid: { display: false }, border: { color: INB_AXIS }, ticks: { color: INB_INK2, font: { size: 11 } } },
+      y: { grid: { color: INB_GRID }, border: { display: false }, ticks: { color: INB_INK2, font: { size: 11 } } },
     },
-  };
-
-  const ctx = document.getElementById('trend-chart');
-  if (trendChart) {
-    trendChart.data.datasets = datasets;
-    trendChart.options = options;
-    trendChart.update('none');
-  } else {
-    trendChart = new Chart(ctx, { type: 'line', data: { labels: MONTHS_JP, datasets }, options });
-  }
+  }, extra);
 }
 
-// ─── 国別棒グラフ＋前年比折れ線 ─────────────────────────────────────────────────
+function inbReplaceChart(current, canvasId, config) {
+  if (current) current.destroy();
+  return new Chart(document.getElementById(canvasId), config);
+}
 
+function inbLegendHtml(years) {
+  const mk = s => {
+    const shape = { circle: `<circle cx="11" cy="6" r="4" fill="${s.color}"/>`,
+      rect: `<rect x="7.5" y="2.5" width="7" height="7" fill="${s.color}"/>`,
+      rectRot: `<path d="M11 1.5L15.5 6L11 10.5L6.5 6Z" fill="#fff" stroke="${s.color}" stroke-width="1.6"/>` }[s.pointStyle];
+    return `<svg width="22" height="12"><line x1="0" y1="6" x2="22" y2="6" stroke="${s.color}" stroke-width="2"/>${shape}</svg>`;
+  };
+  return years.map((y, k) => `<span>${mk(INB_YEAR_STYLE[years.length - 1 - k])}${y}年</span>`).join('');
+}
+
+function trendYears() {
+  const years = Object.keys(data.meta.available_months).sort();
+  return years.slice(-3);   // 今年＋過去2年
+}
+
+// ─── 要約メッセージ＋主要数字 ───────────────────────────────────────────────────
+function updateSummary() {
+  const { mode, year, startMonth, endMonth, country } = state;
+  const prev = prevYear(year);
+  const label = makePeriodLabel();
+  const cur = getValue(country, year, mode, startMonth, endMonth);
+  const pv = getValue(country, prev, mode, startMonth, endMonth);
+  const total = getValue('総数', year, mode, startMonth, endMonth);
+  const p = pctOf(cur, pv);
+  const name = country === '総数' ? '訪日客数（総数）' : `${country}からの訪日客数`;
+  const cmp = mode === 'monthly' ? '前年同月比' : mode === 'annual' ? '前年比' : '前年同期比';
+
+  const rows = COUNTRIES_ORDER.filter(c => data.monthly[c] && c !== 'その他')
+    .map(c => ({ c, v: getValue(c, year, mode, startMonth, endMonth) })).filter(r => r.v != null)
+    .sort((a, b) => b.v - a.v);
+  const rank = country === '総数' ? null : rows.findIndex(r => r.c === country) + 1;
+
+  const lines = [`${label}の${name}は${fmt(cur)}人${p == null ? '' : `（${cmp}${pctTxt(p)}）`}。`];
+  if (country !== '総数' && rank) lines.push(`国・地域別では${rows.length}か国・地域中${rank}位、全体に占めるシェアは${(cur / total * 100).toFixed(1)}%。`);
+  else {
+    const neg = COUNTRIES_ORDER.filter(c => data.monthly[c] && c !== 'その他')
+      .filter(c => { const a = getValue(c, year, mode, startMonth, endMonth), b = getValue(c, prev, mode, startMonth, endMonth); return a != null && b && a < b; });
+    lines.push(neg.length === 0 ? '主要国・地域は全て前年を上回った。'
+      : neg.length <= 3 ? `前年を下回ったのは${neg.join('、')}。` : `前年を下回ったのは${neg.length}か国・地域。`);
+  }
+  document.getElementById('inb-msg').innerHTML = lines.map(t => `<p>${t}</p>`).join('');
+
+  const tiles = [
+    { lbl: `${label}`, val: fmt(cur), unit: '人', p },
+    { lbl: mode === 'monthly' ? `前年同月（${prev}年${endMonth}月）` : mode === 'annual' ? `前年（${prev}年）` : `前年同期（${prev}年）`, val: fmt(pv), unit: '人', note: pv != null && cur != null ? `前年差 ${cur >= pv ? '+' : '△'}${fmt(Math.abs(cur - pv))}人` : '—' },
+    country === '総数'
+      ? { lbl: '国・地域数（前年比プラス）', val: String(rows.filter(r => { const b = getValue(r.c, prev, mode, startMonth, endMonth); return b && r.v >= b; }).length), unit: `/${rows.length}`, note: '「その他」を除く' }
+      : { lbl: '全体に占めるシェア', val: total ? (cur / total * 100).toFixed(1) : '—', unit: '%', note: `総数 ${fmt(total)}人` },
+    country === '総数'
+      ? { lbl: '最多の国・地域', val: rows[0] ? rows[0].c : '—', unit: '', note: rows[0] ? `${fmt(rows[0].v)}人` : '' }
+      : { lbl: '国・地域別の順位', val: rank ? String(rank) : '—', unit: '位', note: `${rows.length}か国・地域中` },
+  ];
+  document.getElementById('inb-kpis').innerHTML = tiles.map(t => `<div class="inb-kpi"><div class="lbl">${t.lbl}</div>
+    <div class="val">${t.val}<small>${t.unit}</small></div>
+    <div class="delta ${t.p == null ? '' : t.p >= 0 ? 'up' : 'down'}">${t.p != null ? `${t.p >= 0 ? '▲' : '▼'} ${cmp} ${pctTxt(t.p)}` : t.note}</div></div>`).join('');
+}
+
+// ─── 月次推移（直線・全年マーカー） ──────────────────────────────────────────────
+function updateTrendChart() {
+  const entity = state.country;
+  document.getElementById('trend-title').textContent =
+    entity === '総数' ? '月次推移（訪日外客数 総数）' : `月次推移（${entity}）`;
+  const years = trendYears();
+  const datasets = years.map((year, k) => {
+    const s = INB_YEAR_STYLE[years.length - 1 - k];
+    const maxM = Math.max(0, ...getAvailableMonths(year));
+    const values = Array.from({ length: 12 }, (_, i) => (i + 1 <= maxM ? getMonthly(entity, year, i + 1) : null));
+    return {
+      label: `${year}年`, data: values, borderColor: s.color, backgroundColor: s.hollow ? '#ffffff' : s.color,
+      pointStyle: s.pointStyle, pointRadius: s.r, pointHoverRadius: s.r + 2,
+      pointBorderColor: s.hollow ? s.color : '#ffffff', pointBorderWidth: s.hollow ? 1.8 : 1,
+      borderWidth: s.width, tension: 0, spanGaps: false, order: years.length - k,
+    };
+  });
+  document.getElementById('trend-legend').innerHTML = inbLegendHtml(years);
+  const o = inbBaseOptions();
+  o.scales.y.ticks.callback = v => manTxt(v);
+  o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label}：${c.raw == null ? '—' : fmt(c.raw) + '人'}` };
+  trendChart = inbReplaceChart(trendChart, 'trend-chart', { type: 'line', data: { labels: MONTHS_JP, datasets }, options: o });
+}
+
+// ─── 月別の前年同月比（選択国・選択年） ──────────────────────────────────────────
+function updateYoyMonthChart() {
+  const { country, year } = state;
+  const prev = prevYear(year);
+  const months = getAvailableMonths(year);
+  document.getElementById('yoy-title').textContent =
+    `月別の前年同月比（${country === '総数' ? '総数' : country}・${year}年）`;
+  const vals = months.map(m => pctOf(getMonthly(country, year, m), getMonthly(country, prev, m)));
+  const o = inbBaseOptions();
+  o.interaction = { mode: 'nearest', axis: 'x', intersect: false };
+  o.scales.y.ticks.callback = v => `${v}%`;
+  o.plugins.tooltip.callbacks = { label: c => ` 前年同月比：${pctTxt(c.raw)}` };
+  yoyChart = inbReplaceChart(yoyChart, 'yoy-chart', {
+    type: 'bar',
+    data: { labels: months.map(m => MONTHS_JP[m - 1]), datasets: [{ label: '前年同月比', data: vals,
+      backgroundColor: vals.map(v => (v ?? 0) >= 0 ? INB_POS : INB_NEG), borderRadius: 4, borderSkipped: false,
+      maxBarThickness: 28 }] },
+    options: o,
+  });
+}
+
+// ─── 国・地域別（期間）＋前年比（左右に分けて同じ並び） ───────────────────────────
 function updateBarChart() {
   const { mode, year, startMonth, endMonth, country } = state;
   const prev = prevYear(year);
-
-  const rows = COUNTRIES_ORDER
-    .filter(c => data.monthly[c])
-    .map(c => ({
-      name: c,
-      cur:  getValue(c, year, mode, startMonth, endMonth),
-      prev: getValue(c, prev, mode, startMonth, endMonth),
-    }))
+  const rows = COUNTRIES_ORDER.filter(c => data.monthly[c] && c !== 'その他')
+    .map(c => ({ name: c, cur: getValue(c, year, mode, startMonth, endMonth), prev: getValue(c, prev, mode, startMonth, endMonth) }))
     .filter(r => r.cur != null)
-    .sort((a, b) => (b.cur ?? 0) - (a.cur ?? 0));
+    .sort((a, b) => b.cur - a.cur);
+  const labels = rows.map(r => r.name);
+  const label = makePeriodLabel();
+  document.getElementById('bar-label').textContent = label;
+  document.getElementById('bar-title').textContent = `国・地域別 訪日客数（${label}）`;
+  document.getElementById('bar-yoy-title').textContent =
+    mode === 'monthly' ? '前年同月比' : mode === 'annual' ? '前年比' : '前年同期比';
 
-  const labels      = rows.map(r => r.name);
-  const barColors   = rows.map(r => r.name === country ? COLOR_SELECTED : COLOR_DEFAULT);
-  const yoyData     = rows.map(r => {
-    if (r.prev == null || r.prev === 0) return null;
-    return (r.cur / r.prev) * 100;
-  });
-  const yoyPtColors = yoyData.map(v =>
-    v == null ? 'transparent' : v >= 100 ? COLOR_YOY_UP : COLOR_YOY_DOWN
-  );
-
-  document.getElementById('bar-label').textContent = makePeriodLabel();
-
-  const datasets = [
-    {
-      type: 'bar',
-      label: '訪日外客数',
-      data: rows.map(r => r.cur),
-      backgroundColor: barColors,
-      _legendColor: COLOR_DEFAULT,
-      borderRadius: 3,
-      borderSkipped: false,
-      yAxisID: 'y',
-      order: 2,
-    },
-    {
-      type: 'line',
-      label: '前年比（右軸）',
-      data: yoyData,
-      borderColor: 'rgba(100,100,100,0.5)',
-      backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-      pointBackgroundColor: yoyPtColors,
-      pointBorderColor:     yoyPtColors,
-      spanGaps: false,
-      tension: 0,
-      yAxisID: 'y1',
-      order: 1,
-    },
-  ];
-
-  buildCustomLegend('bar-legend', document.getElementById('bar-chart'), datasets);
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ctx.dataset.yAxisID === 'y1'
-            ? (ctx.parsed.y != null ? `前年比：${ctx.parsed.y.toFixed(1)}%` : '前年比：—')
-            : `${ctx.dataset.label}：${ctx.parsed.y != null ? fmt(ctx.parsed.y) + '人' : '—'}`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        ticks: { font: { size: 10 } },
-        grid:  { color: 'rgba(0,0,0,0.04)' },
-      },
-      y: {
-        position: 'left',
-        beginAtZero: true,
-        ticks: {
-          font: { size: 11 },
-          callback: v => v >= 10000 ? (v / 10000).toFixed(0) + '万' : v.toLocaleString(),
-        },
-        grid: { color: 'rgba(0,0,0,0.04)' },
-      },
-      y1: {
-        position: 'right',
-        grid: { drawOnChartArea: false },
-        ticks: {
-          font: { size: 11 },
-          callback: v => v + '%',
-        },
-        title: {
-          display: true,
-          text: '前年比（%）',
-          font: { size: 11 },
-          color: 'rgba(100,100,100,0.8)',
-        },
-      },
-    },
+  const hbar = (extra) => {
+    const o = inbBaseOptions({ indexAxis: 'y' });
+    o.interaction = { mode: 'nearest', axis: 'y', intersect: false };
+    o.scales.x = { grid: { color: INB_GRID }, border: { display: false }, ticks: { color: INB_INK2, font: { size: 11 } } };
+    o.scales.y = { grid: { display: false }, border: { color: INB_AXIS },
+      ticks: { color: c => (labels[c.index] === country ? INB_BAR_SEL : INB_INK2), font: c => ({ size: 11, weight: labels[c.index] === country ? '700' : '400' }), autoSkip: false } };
+    return Object.assign(o, extra);
   };
 
-  const ctx = document.getElementById('bar-chart');
-  if (barChart) {
-    barChart.data.labels   = labels;
-    barChart.data.datasets = datasets;
-    barChart.options       = options;
-    barChart.update('none');
-  } else {
-    barChart = new Chart(ctx, {
-      type: 'bar',
-      data: { labels, datasets },
-      options,
-      plugins: [refLinePlugin],
-    });
-  }
+  const o1 = hbar();
+  o1.scales.x.ticks.callback = v => manTxt(v);
+  o1.plugins.tooltip.callbacks = { label: c => ` ${fmt(c.raw)}人` };
+  barChart = inbReplaceChart(barChart, 'bar-chart', {
+    type: 'bar',
+    data: { labels, datasets: [{ label: '訪日客数', data: rows.map(r => r.cur),
+      backgroundColor: rows.map(r => r.name === country ? INB_BAR_SEL : INB_BAR),
+      borderRadius: 4, borderSkipped: 'start', maxBarThickness: 18, categoryPercentage: 0.8 }] },
+    options: o1,
+  });
+
+  const yoy = rows.map(r => pctOf(r.cur, r.prev));
+  const o2 = hbar();
+  o2.scales.x.ticks.callback = v => `${v}%`;
+  o2.plugins.tooltip.callbacks = { label: c => ` ${document.getElementById('bar-yoy-title').textContent}：${pctTxt(c.raw)}` };
+  barYoyChart = inbReplaceChart(barYoyChart, 'bar-yoy-chart', {
+    type: 'bar',
+    data: { labels, datasets: [{ label: '前年同期比', data: yoy,
+      backgroundColor: yoy.map(v => (v ?? 0) >= 0 ? INB_POS : INB_NEG),
+      borderRadius: 4, borderSkipped: false, maxBarThickness: 18, categoryPercentage: 0.8 }] },
+    options: o2,
+  });
 }
 
 // ─── 国別比較表 ────────────────────────────────────────────────────────────────
@@ -505,7 +497,9 @@ function updateTable() {
 // ─── 一括更新 ─────────────────────────────────────────────────────────────────
 
 function updateAll() {
+  updateSummary();
   updateTrendChart();
+  updateYoyMonthChart();
   updateBarChart();
   updateTable();
 }

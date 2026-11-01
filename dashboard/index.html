@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>インバウンドダッシュボード</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -55,26 +55,37 @@
     </div>
   </section>
 
-  <!-- 月次推移グラフ -->
-  <section class="card">
-    <div class="card-header">
-      <h2 class="card-title" id="trend-title">月次推移（韓国）</h2>
-    </div>
-    <div class="chart-wrap">
-      <canvas id="trend-chart"></canvas>
-    </div>
-  </section>
+  <!-- 要約と主要数字（新ダッシュボードと同じ見せ方） -->
+  <div class="inb-msg" id="inb-msg"></div>
+  <section class="inb-kpis" id="inb-kpis"></section>
 
-  <!-- 国別棒グラフ＋前年比折れ線 -->
-  <section class="card">
-    <div class="card-header">
-      <h2 class="card-title">国別比較</h2>
-      <span class="card-note" id="bar-label">—</span>
-    </div>
-    <div class="bar-chart-wrap">
-      <canvas id="bar-chart"></canvas>
-    </div>
-  </section>
+  <div class="inb-grid">
+    <!-- 月次推移 -->
+    <section class="card">
+      <h2 class="card-title" id="trend-title">月次推移（韓国）</h2>
+      <div class="inb-note">単位：人（直線・全年マーカー）</div>
+      <div class="inb-legend" id="trend-legend"></div>
+      <div class="inb-chart"><canvas id="trend-chart"></canvas></div>
+    </section>
+    <!-- 月別の前年同月比 -->
+    <section class="card">
+      <h2 class="card-title" id="yoy-title">月別の前年同月比</h2>
+      <div class="inb-note">増減率（%）</div>
+      <div class="inb-chart inb-chart-yoy"><canvas id="yoy-chart"></canvas></div>
+    </section>
+    <!-- 国・地域別（期間） -->
+    <section class="card">
+      <h2 class="card-title" id="bar-title">国・地域別 訪日客数</h2>
+      <div class="inb-note">単位：人　<span class="card-note" id="bar-label">—</span></div>
+      <div class="inb-chart inb-chart-tall"><canvas id="bar-chart"></canvas></div>
+    </section>
+    <!-- 国・地域別の前年比 -->
+    <section class="card">
+      <h2 class="card-title" id="bar-yoy-title">前年同期比</h2>
+      <div class="inb-note">増減率（%）・左と同じ並び</div>
+      <div class="inb-chart inb-chart-tall"><canvas id="bar-yoy-chart"></canvas></div>
+    </section>
+  </div>
 
   <!-- 国別比較表 -->
   <section class="card">
@@ -227,7 +238,7 @@
   <p>本ダッシュボードは内部利用目的のみ</p>
 </footer>
 
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 <script src="stay_tab.js?v=4"></script>
 </body>
 </html>

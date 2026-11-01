@@ -489,3 +489,28 @@ tr.row-total td {
   .pie-row { flex-direction: column; }
   .pie-chart-wrap { width: 100%; min-width: unset; }
 }
+
+/* ═══ 訪日外客数タブ：新ダッシュボード（monthly_report.html）と同じ見せ方 ═══ */
+.inb-msg { background: #e9f1fc; color: #0d366b; border-radius: var(--radius); padding: 12px 16px; margin-bottom: 14px; font-size: 0.95rem; line-height: 1.7; }
+.inb-msg p { margin: 0; }
+.inb-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.inb-kpi { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; }
+.inb-kpi .lbl { color: var(--gray-500); font-size: 0.78rem; }
+.inb-kpi .val { font-size: 1.6rem; font-weight: 700; margin: 2px 0; white-space: nowrap; }
+.inb-kpi .val small { font-size: 0.85rem; font-weight: 600; color: var(--gray-500); margin-left: 2px; }
+.inb-kpi .delta { font-size: 0.82rem; font-weight: 600; color: var(--gray-500); }
+.inb-kpi .delta.up { color: #006300; } .inb-kpi .delta.down { color: #c22b2b; }
+.inb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.inb-grid .card { margin-bottom: 0; min-width: 0; }
+.inb-note { color: var(--gray-500); font-size: 0.78rem; margin: 2px 0 8px; }
+.inb-note .card-note { margin-left: 6px; }
+.inb-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem; color: var(--gray-700); margin-bottom: 6px; }
+.inb-legend svg { vertical-align: -1px; margin-right: 5px; }
+.inb-chart { position: relative; height: 300px; }
+.inb-chart-yoy { height: 326px; }
+.inb-chart-tall { height: 620px; }
+@media (max-width: 900px) {
+  .inb-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inb-grid { grid-template-columns: minmax(0, 1fr); }
+  .inb-chart-tall { height: 560px; }
+}
