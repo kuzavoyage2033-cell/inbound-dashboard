@@ -23,6 +23,37 @@ const COLOR_YOY_UP    = 'rgba(5,122,85,1)';       // 前年比↑：緑
 const COLOR_YOY_DOWN  = 'rgba(200,30,30,1)';      // 前年比↓：赤
 const COLOR_REF_LINE  = 'rgba(5,122,85,0.6)';     // 100%基準線：緑点線
 
+// ─── 表示テーマ（白／ダーク） ─────────────────────────────────────────────────
+const THEMES = {
+  light: { card: '#ffffff', ink: '#0b0b0b', ink2: '#52514e', grid: '#e1e0d9', axis: '#c3c2b7', faint: 'rgba(0,0,0,0.05)' },
+  dark:  { card: '#1c1c1c', ink: '#f3f4f6', ink2: '#c3c2b7', grid: '#333333', axis: '#555555', faint: 'rgba(255,255,255,0.08)' },
+};
+function currentTheme() { return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'; }
+function thm() { return THEMES[currentTheme()]; }
+function dashGrid() { return thm().faint; }   // stay_tab.js のグリッド線にも使う
+
+function applyChartDefaults() {
+  Chart.defaults.color = thm().ink2;
+  Chart.defaults.borderColor = thm().faint;
+}
+
+function setupThemeToggle() {
+  const btn = document.getElementById('theme-toggle');
+  const label = () => { btn.textContent = currentTheme() === 'dark' ? '白表示に切替' : 'ダーク表示に切替'; };
+  label();
+  btn.addEventListener('click', () => {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    if (next === 'dark') document.documentElement.dataset.theme = 'dark';
+    else delete document.documentElement.dataset.theme;
+    try { localStorage.setItem('dash-theme', next); } catch (e) {}
+    label();
+    applyChartDefaults();
+    if (data) updateAll();
+    // 宿泊タブのグラフも描き直す（読み込み済みの場合のみ）
+    try { if (typeof stayData !== 'undefined' && stayData) { updateScAll(); updateSpAll(); } } catch (e) { console.warn(e); }
+  });
+}
+
 // ─── 状態 ────────────────────────────────────────────────────────────────────
 
 const state = {
@@ -246,7 +277,7 @@ const INB_YEAR_STYLE = [
 ];
 const INB_POS = '#2a78d6', INB_NEG = '#e34948';
 const INB_BAR = '#86b6ef', INB_BAR_SEL = '#1c5cab';
-const INB_GRID = '#e1e0d9', INB_AXIS = '#c3c2b7', INB_INK2 = '#52514e';
+
 
 let yoyChart = null;
 let barYoyChart = null;
@@ -261,12 +292,12 @@ function inbBaseOptions(extra = {}) {
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: { display: false },
-      tooltip: { backgroundColor: '#ffffff', titleColor: '#0b0b0b', bodyColor: INB_INK2, borderColor: INB_GRID,
+      tooltip: { backgroundColor: thm().card, titleColor: thm().ink, bodyColor: thm().ink2, borderColor: thm().grid,
                  borderWidth: 1, padding: 10, boxPadding: 4, usePointStyle: true },
     },
     scales: {
-      x: { grid: { display: false }, border: { color: INB_AXIS }, ticks: { color: INB_INK2, font: { size: 11 } } },
-      y: { grid: { color: INB_GRID }, border: { display: false }, ticks: { color: INB_INK2, font: { size: 11 } } },
+      x: { grid: { display: false }, border: { color: thm().axis }, ticks: { color: thm().ink2, font: { size: 11 } } },
+      y: { grid: { color: thm().grid }, border: { display: false }, ticks: { color: thm().ink2, font: { size: 11 } } },
     },
   }, extra);
 }
@@ -280,7 +311,7 @@ function inbLegendHtml(years) {
   const mk = s => {
     const shape = { circle: `<circle cx="11" cy="6" r="4" fill="${s.color}"/>`,
       rect: `<rect x="7.5" y="2.5" width="7" height="7" fill="${s.color}"/>`,
-      rectRot: `<path d="M11 1.5L15.5 6L11 10.5L6.5 6Z" fill="#fff" stroke="${s.color}" stroke-width="1.6"/>` }[s.pointStyle];
+      rectRot: `<path d="M11 1.5L15.5 6L11 10.5L6.5 6Z" fill="${thm().card}" stroke="${s.color}" stroke-width="1.6"/>` }[s.pointStyle];
     return `<svg width="22" height="12"><line x1="0" y1="6" x2="22" y2="6" stroke="${s.color}" stroke-width="2"/>${shape}</svg>`;
   };
   return years.map((y, k) => `<span>${mk(INB_YEAR_STYLE[years.length - 1 - k])}${y}年</span>`).join('');
@@ -344,9 +375,9 @@ function updateTrendChart() {
     const maxM = Math.max(0, ...getAvailableMonths(year));
     const values = Array.from({ length: 12 }, (_, i) => (i + 1 <= maxM ? getMonthly(entity, year, i + 1) : null));
     return {
-      label: `${year}年`, data: values, borderColor: s.color, backgroundColor: s.hollow ? '#ffffff' : s.color,
+      label: `${year}年`, data: values, borderColor: s.color, backgroundColor: s.hollow ? thm().card : s.color,
       pointStyle: s.pointStyle, pointRadius: s.r, pointHoverRadius: s.r + 2,
-      pointBorderColor: s.hollow ? s.color : '#ffffff', pointBorderWidth: s.hollow ? 1.8 : 1,
+      pointBorderColor: s.hollow ? s.color : thm().card, pointBorderWidth: s.hollow ? 1.8 : 1,
       borderWidth: s.width, tension: 0, spanGaps: false, order: years.length - k,
     };
   });
@@ -396,9 +427,9 @@ function updateBarChart() {
   const hbar = (extra) => {
     const o = inbBaseOptions({ indexAxis: 'y' });
     o.interaction = { mode: 'nearest', axis: 'y', intersect: false };
-    o.scales.x = { grid: { color: INB_GRID }, border: { display: false }, ticks: { color: INB_INK2, font: { size: 11 } } };
-    o.scales.y = { grid: { display: false }, border: { color: INB_AXIS },
-      ticks: { color: c => (labels[c.index] === country ? INB_BAR_SEL : INB_INK2), font: c => ({ size: 11, weight: labels[c.index] === country ? '700' : '400' }), autoSkip: false } };
+    o.scales.x = { grid: { color: thm().grid }, border: { display: false }, ticks: { color: thm().ink2, font: { size: 11 } } };
+    o.scales.y = { grid: { display: false }, border: { color: thm().axis },
+      ticks: { color: c => (labels[c.index] === country ? (currentTheme() === 'dark' ? '#9ec5f4' : INB_BAR_SEL) : thm().ink2), font: c => ({ size: 11, weight: labels[c.index] === country ? '700' : '400' }), autoSkip: false } };
     return Object.assign(o, extra);
   };
 
@@ -518,6 +549,8 @@ async function init() {
 
   document.getElementById('last-updated').textContent = data.meta.last_updated;
 
+  applyChartDefaults();
+  setupThemeToggle();
   setupCountrySelect();
   setupModeButtons();
   buildYearOptions();

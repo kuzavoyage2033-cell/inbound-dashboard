@@ -48,7 +48,7 @@ const scState = {
   endMonth: 12,
   // ②1都道府県 年別比較
   singlePref: '東京都',
-  selectedYears: new Set([2019, 2024, 2025, 2026]),
+  selectedYears: new Set(SINGLE_YEARS.slice(-2)),   // 初期表示は最新の2年（例：2025・2026）
   // ③3都道府県比較
   prefs: ['東京都', '大阪府', '広島県'],
   lineYear: 2025,
@@ -287,7 +287,7 @@ function updateScBar47() {
           minRotation: 45,
           font: { size: 10 },
         },
-        grid: { color: 'rgba(0,0,0,0.04)' },
+        grid: { color: dashGrid() },
       },
       y: {
         beginAtZero: true,
@@ -295,7 +295,7 @@ function updateScBar47() {
           font: { size: 11 },
           callback: v => v >= 10000 ? (v / 10000).toFixed(0) + '万' : v.toLocaleString(),
         },
-        grid: { color: 'rgba(0,0,0,0.06)' },
+        grid: { color: dashGrid() },
       },
     },
   };
@@ -325,8 +325,9 @@ function setupScSinglePref() {
     updateScSingle();
   });
 
-  // 年トグルボタン
+  // 年トグルボタン（初期の選択状態を state に合わせる）
   document.querySelectorAll('.sc-year-btn').forEach(btn => {
+    btn.classList.toggle('active', scState.selectedYears.has(parseInt(btn.dataset.year)));
     btn.addEventListener('click', () => {
       const y = parseInt(btn.dataset.year);
       if (scState.selectedYears.has(y)) {
@@ -387,14 +388,14 @@ function updateScSingle() {
       },
     },
     scales: {
-      x: { ticks: { font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
+      x: { ticks: { font: { size: 11 } }, grid: { color: dashGrid() } },
       y: {
         beginAtZero: false,
         ticks: {
           font: { size: 11 },
           callback: v => v >= 10000 ? (v / 10000).toFixed(0) + '万' : v.toLocaleString(),
         },
-        grid: { color: 'rgba(0,0,0,0.06)' },
+        grid: { color: dashGrid() },
       },
     },
   };
@@ -482,14 +483,14 @@ function updateScLine() {
       },
     },
     scales: {
-      x: { ticks: { font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
+      x: { ticks: { font: { size: 11 } }, grid: { color: dashGrid() } },
       y: {
         beginAtZero: false,
         ticks: {
           font: { size: 11 },
           callback: v => v >= 10000 ? (v / 10000).toFixed(0) + '万' : v.toLocaleString(),
         },
-        grid: { color: 'rgba(0,0,0,0.06)' },
+        grid: { color: dashGrid() },
       },
     },
   };
@@ -521,7 +522,7 @@ const natSharePlugin = {
     if (!total) return;
     ctx.save();
     ctx.font      = '600 11px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.fillStyle = '#374151';
+    ctx.fillStyle = thm().ink2;
     ctx.textAlign = 'left';
     chart.getDatasetMeta(0).data.forEach((bar, i) => {
       const v = vals[i];
@@ -686,7 +687,7 @@ function updateSpNatBar() {
           font: { size: 11 },
           callback: v => total > 0 ? (v / total * 100).toFixed(0) + '%' : v,
         },
-        grid: { color: 'rgba(0,0,0,0.04)' },
+        grid: { color: dashGrid() },
       },
       y: { ticks: { font: { size: 11 } }, grid: { display: false } },
     },

@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>インバウンドダッシュボード</title>
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
+  <script>try { const q = new URLSearchParams(location.search).get('theme'); if (q === 'dark' || q === 'light') localStorage.setItem('dash-theme', q); if (localStorage.getItem('dash-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (e) {}</script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -13,6 +14,7 @@
   <div class="header-inner">
     <h1>インバウンドダッシュボード</h1>
     <p class="subtitle">出典：日本政府観光局（JNTO）訪日外客統計 / 観光庁 宿泊旅行統計調査</p>
+    <button id="theme-toggle" class="theme-toggle" type="button">ダーク表示に切替</button>
   </div>
 </header>
 
@@ -238,7 +240,7 @@
   <p>本ダッシュボードは内部利用目的のみ</p>
 </footer>
 
-<script src="app.js?v=5"></script>
-<script src="stay_tab.js?v=4"></script>
+<script src="app.js?v=6"></script>
+<script src="stay_tab.js?v=6"></script>
 </body>
 </html>
