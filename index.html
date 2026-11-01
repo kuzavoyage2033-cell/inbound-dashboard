@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>インバウンド動向（広島県観光連盟）</title>
+<style>
+:root { color-scheme: light; --bg: #ffffff; --ink: #222222; --sub: #666666; --line: #e5e5e5; --red: #c00000; --card: #f5f5f5; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --bg: #121212; --ink: #f0efec; --sub: #b5b5b5; --line: #333333; --red: #e66767; --card: #1e1e1e; }
+}
+:root[data-theme="dark"] { color-scheme: dark; --bg: #121212; --ink: #f0efec; --sub: #b5b5b5; --line: #333333; --red: #e66767; --card: #1e1e1e; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "BIZ UDPGothic", "Yu Gothic UI", "Hiragino Sans", Meiryo, sans-serif; line-height: 1.7; }
+main { max-width: 760px; margin: 0 auto; padding: 56px 16px; }
+.bar { width: 28px; height: 3px; background: var(--red); margin-bottom: 14px; }
+h1 { font-size: 28px; margin: 0 0 6px; }
+p.lead { color: var(--sub); margin: 0 0 32px; }
+a.card { display: block; text-decoration: none; color: inherit; background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 20px 22px; margin-bottom: 14px; }
+a.card:hover { border-color: var(--red); }
+a.card b { display: block; font-size: 18px; margin-bottom: 4px; }
+a.card span { color: var(--sub); font-size: 14px; }
+footer { color: var(--sub); font-size: 12px; margin-top: 36px; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="bar"></div>
+  <h1>インバウンド動向</h1>
+  <p class="lead">訪日客数・宿泊・広島空港の最新データ（毎月更新）　広島県観光連盟</p>
+  <a class="card" href="dashboard/slides.html"><b>月次レポート（スライド版）</b><span>毎月のレポートと同じ11ページ。最新月の要点をまとめて確認できます</span></a>
+  <a class="card" href="dashboard/monthly_report.html"><b>ダッシュボード</b><span>国・地域や都道府県を選んで、2019年からの推移を比較できます</span></a>
+  <footer>出典：日本政府観光局（JNTO）訪日外客統計／観光庁 宿泊旅行統計調査／出入国在留管理庁 出入国管理統計</footer>
+</main>
+</body>
+</html>
