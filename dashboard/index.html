@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>インバウンドダッシュボード</title>
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
   <script>try { const q = new URLSearchParams(location.search).get('theme'); if (q === 'dark' || q === 'light') localStorage.setItem('dash-theme', q); if (localStorage.getItem('dash-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (e) {}</script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
@@ -112,6 +112,14 @@
     </div>
   </section>
 
+  <details class="data-caveats">
+    <summary>データについての注意</summary>
+    <ul>
+      <li>訪日外客数は日本政府観光局（JNTO）の公表値です。<b>直近の月は推計値</b>で、後日、暫定値・確定値に改定されます。</li>
+      <li>「その他」は、総数から表示している23か国・地域を差し引いた値です。</li>
+      <li>前年比は同じ月の範囲で比較しています（年単位で当年が年の途中までの場合は、前年も同じ月まで）。期間内にデータの無い月がある場合、その期間の値は表示しません。</li>
+    </ul>
+  </details>
   <div class="data-note">最終更新：<span id="last-updated">—</span> ｜ 出典：JNTO訪日外客統計</div>
 </main>
 
@@ -144,6 +152,8 @@
       </div>
     </div>
   </section>
+
+  <div class="inb-msg period-msg" id="sc-period-msg" hidden></div>
 
   <!-- ① 47都道府県 縦棒グラフ -->
   <section class="card">
@@ -190,6 +200,16 @@
     </div>
   </section>
 
+  <details class="data-caveats" open>
+    <summary>データについての注意</summary>
+    <ul>
+      <li><b>2026年は速報値</b>（第2次速報）、2025年以前は確定値です。速報値は後日改定されることがあります。</li>
+      <li><b>2026年1月分から推計方法が変わっています。</b>観光庁は推計の層化基準を「従業者数」から「客室数」に変更しており、2026年と2025年以前は厳密には同じ基準の数値ではありません。前年との比較は目安としてご覧ください。</li>
+      <li>国籍別の宿泊数は「参考第1表」の数値で、<b>客室数20室以上の施設だけ</b>が対象です。小規模な宿泊施設（簡易宿所・民泊など）は含まれないため、国籍別の合計は都道府県全体の外国人延べ宿泊者数より少なくなります。</li>
+      <li>2026年に新設された国籍区分（メキシコ・北欧地域・中東地域）は、前年と比較できるよう「その他」に含めています。</li>
+      <li>延べ宿泊者数は「人泊」（1人が2泊すると2人泊）です。期間内にデータの無い月がある場合、その期間の合計は表示しません。</li>
+    </ul>
+  </details>
   <div class="data-note">最終更新：<span id="sc-updated">—</span> ｜ 出典：観光庁 宿泊旅行統計調査</div>
 </main>
 
@@ -222,6 +242,8 @@
     </div>
   </section>
 
+  <div class="inb-msg period-msg" id="sp-period-msg" hidden></div>
+
   <!-- 国籍別割合（横棒グラフ） -->
   <section class="card">
     <div class="card-header">
@@ -233,6 +255,16 @@
     </div>
   </section>
 
+  <details class="data-caveats" open>
+    <summary>データについての注意</summary>
+    <ul>
+      <li><b>2026年は速報値</b>（第2次速報）、2025年以前は確定値です。速報値は後日改定されることがあります。</li>
+      <li><b>2026年1月分から推計方法が変わっています。</b>観光庁は推計の層化基準を「従業者数」から「客室数」に変更しており、2026年と2025年以前は厳密には同じ基準の数値ではありません。前年との比較は目安としてご覧ください。</li>
+      <li>国籍別の宿泊数は「参考第1表」の数値で、<b>客室数20室以上の施設だけ</b>が対象です。小規模な宿泊施設（簡易宿所・民泊など）は含まれないため、国籍別の合計は都道府県全体の外国人延べ宿泊者数より少なくなります。</li>
+      <li>2026年に新設された国籍区分（メキシコ・北欧地域・中東地域）は、前年と比較できるよう「その他」に含めています。</li>
+      <li>延べ宿泊者数は「人泊」（1人が2泊すると2人泊）です。期間内にデータの無い月がある場合、その期間の合計は表示しません。</li>
+    </ul>
+  </details>
   <div class="data-note">最終更新：<span id="sp-updated">—</span> ｜ 出典：観光庁 宿泊旅行統計調査</div>
 </main>
 
@@ -240,7 +272,8 @@
   <p>本ダッシュボードは内部利用目的のみ</p>
 </footer>
 
-<script src="app.js?v=6"></script>
-<script src="stay_tab.js?v=6"></script>
+<script src="calc.js?v=7"></script>
+<script src="app.js?v=7"></script>
+<script src="stay_tab.js?v=7"></script>
 </body>
 </html>

@@ -97,29 +97,36 @@ function latestCompleteYear() {
   return stayData.years[stayData.years.length - 1];
 }
 
+/** 期間の値（共通ルール calc.js：欠損月があれば null。年単位で当年が途中までなら公表済みの月だけ） */
+function stayPeriodMonths(year, mode, startM, endM) {
+  return StatsCalc.periodMonths(mode, stayAvailMonths(year), startM, endM);
+}
+
 function getStayValue(country, pref, year, mode, startM, endM) {
-  if (mode === 'annual') {
-    // annual が null（未確定年）は利用可能月の合計にフォールバック
-    const ann = getStayAnnual(country, pref, year);
-    if (ann != null) return ann;
-    const avail = stayAvailMonths(year);
-    if (!avail.length) return null;
-    let sum = 0, hasAny = false;
-    for (const m of avail) {
-      const v = getStayMonthly(country, pref, year, m);
-      if (v != null) { sum += v; hasAny = true; }
-    }
-    return hasAny ? sum : null;
-  } else if (mode === 'monthly') {
-    return getStayMonthly(country, pref, year, endM);
-  } else {
-    let sum = 0, hasAny = false;
-    for (let m = startM; m <= endM; m++) {
-      const v = getStayMonthly(country, pref, year, m);
-      if (v != null) { sum += v; hasAny = true; }
-    }
-    return hasAny ? sum : null;
+  const months = stayPeriodMonths(year, mode, startM, endM);
+  return StatsCalc.sumMonths((y, m) => getStayMonthly(country, pref, y, m), year, months).value;
+}
+
+/** 期間の注記と欠損の警告を表示（elId: 表示先、items: [{label, missing}]） */
+function showStayPeriodMsg(elId, year, mode, items) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const lines = [];
+  if (StatsCalc.isPartialYear(mode, stayAvailMonths(year))) {
+    const last = Math.max(...stayAvailMonths(year));
+    lines.push(`${year}年は${last}月までの公表のため、1〜${last}月の合計を表示しています（年計ではありません）。`);
   }
+  const miss = items.filter(r => r.missing.length);
+  if (miss.length) {
+    const months = [...new Set(miss.flatMap(r => r.missing))].sort((a, b) => a - b);
+    lines.push(`⚠ ${year}年${months.join('・')}月のデータが無いため、${miss.length}件（${miss.slice(0, 5).map(r => r.label).join('、')}${miss.length > 5 ? ' ほか' : ''}）は表示していません。`);
+  }
+  el.innerHTML = lines.map(t => `<p class="inb-note-line${t.startsWith('⚠') ? ' warn' : ''}">${t}</p>`).join('');
+  el.hidden = lines.length === 0;
+}
+
+function stayMissing(country, pref, year, mode, startM, endM) {
+  return StatsCalc.sumMonths((y, m) => getStayMonthly(country, pref, y, m), year, stayPeriodMonths(year, mode, startM, endM)).missing;
 }
 
 /** データにある都道府県のみ北海道〜沖縄順で返す */
@@ -129,29 +136,13 @@ function geoOrderedPrefs() {
 }
 
 function scPeriodLabel() {
-  if (scState.mode === 'annual') {
-    const avail = stayAvailMonths(scState.year);
-    const isPartial = avail.length > 0 && avail.length < 12;
-    return isPartial
-      ? `${scState.year}年（1〜${avail[avail.length - 1]}月計）`
-      : `${scState.year}年`;
-  }
-  if (scState.mode === 'monthly') return `${scState.year}年${scState.endMonth}月`;
-  const s = scState.startMonth, e = scState.endMonth;
-  return s === e ? `${scState.year}年${s}月` : `${scState.year}年${s}〜${e}月累計`;
+  const st = scState;
+  return StatsCalc.periodLabel(st.mode, st.year, stayAvailMonths(st.year), st.startMonth, st.endMonth);
 }
 
 function spPeriodLabel() {
-  if (spState.mode === 'annual') {
-    const avail = stayAvailMonths(spState.year);
-    const isPartial = avail.length > 0 && avail.length < 12;
-    return isPartial
-      ? `${spState.year}年（1〜${avail[avail.length - 1]}月計）`
-      : `${spState.year}年`;
-  }
-  if (spState.mode === 'monthly') return `${spState.year}年${spState.endMonth}月`;
-  const s = spState.startMonth, e = spState.endMonth;
-  return s === e ? `${spState.year}年${s}月` : `${spState.year}年${s}〜${e}月累計`;
+  const st = spState;
+  return StatsCalc.periodLabel(st.mode, st.year, stayAvailMonths(st.year), st.startMonth, st.endMonth);
 }
 
 // ─── Tab2: コントロールパネル ─────────────────────────────────────────────────
@@ -254,6 +245,8 @@ function updateScBar47() {
   const { country, mode, year, startMonth, endMonth } = scState;
   const prefs  = geoOrderedPrefs();
   const values = prefs.map(p => getStayValue(country, p, year, mode, startMonth, endMonth));
+  showStayPeriodMsg('sc-period-msg', year, mode,
+    prefs.map(p => ({ label: p, missing: stayMissing(country, p, year, mode, startMonth, endMonth) })));
 
   const titleEl = document.getElementById('sc-bar47-title');
   if (titleEl) titleEl.textContent = `47都道府県 宿泊数（${country}・${scPeriodLabel()}）`;
@@ -634,6 +627,10 @@ function applySpPeriodVisibility() {
 
 function updateSpNatBar() {
   const { pref, mode, year, startMonth, endMonth } = spState;
+
+  showStayPeriodMsg('sp-period-msg', year, mode,
+    stayData.countries.filter(c => c !== 'その他')
+      .map(c => ({ label: c, missing: stayMissing(c, pref, year, mode, startMonth, endMonth) })));
 
   let rows = stayData.countries
     .filter(c => c !== 'その他')

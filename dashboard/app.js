@@ -5,7 +5,7 @@
 const COUNTRIES_ORDER = [
   '韓国', '台湾', '中国', '香港', 'タイ', 'シンガポール', 'マレーシア',
   'インドネシア', 'フィリピン', 'ベトナム', 'インド', '中東地域',
-  '英国', 'フランス', 'ドイツ', 'イタリア', 'スペイン', '北欧地域',
+  '英国', 'フランス', 'ドイツ', 'イタリア', 'スペイン', '北欧地域', 'ロシア',
   '米国', 'カナダ', 'メキシコ', '豪州', 'その他',
 ];
 
@@ -83,28 +83,22 @@ function getAvailableMonths(year) {
   return (data.meta.available_months[year] || []).map(Number);
 }
 
-function getValue(entity, year, mode, startM, endM) {
-  if (data.meta.new_in_2026 && data.meta.new_in_2026.includes(entity) && year !== '2026') return null;
+/**
+ * 期間の値（共通ルール calc.js / stats_common.py）
+ *  - 月の範囲は「選択中の年」で決め、前年も同じ月の範囲で集計する（年単位で当年が途中までなら公表済みの月だけ）
+ *  - 期間内に欠損月があれば null（合計しない）。欠損は missingFor() で取得して画面に警告を出す
+ */
+function periodMonthsNow(mode = state.mode, startM = state.startMonth, endM = state.endMonth) {
+  return StatsCalc.periodMonths(mode, getAvailableMonths(state.year), startM, endM);
+}
 
-  if (mode === 'monthly') {
-    return getMonthly(entity, year, endM);
-  }
-  if (mode === 'annual') {
-    const months = getAvailableMonths(year);
-    let sum = 0, hasAny = false;
-    for (const m of months) {
-      const v = getMonthly(entity, year, m);
-      if (v != null) { sum += v; hasAny = true; }
-    }
-    return hasAny ? sum : null;
-  }
-  // cumulative
-  let sum = 0, hasAny = false;
-  for (let m = startM; m <= endM; m++) {
-    const v = getMonthly(entity, year, m);
-    if (v != null) { sum += v; hasAny = true; }
-  }
-  return hasAny ? sum : null;
+function getValue(entity, year, mode, startM, endM) {
+  const months = periodMonthsNow(mode, startM, endM);
+  return StatsCalc.sumMonths((y, m) => getMonthly(entity, y, m), year, months).value;
+}
+
+function missingFor(entity, year) {
+  return StatsCalc.sumMonths((y, m) => getMonthly(entity, y, m), year, periodMonthsNow()).missing;
 }
 
 function prevYear(year) {
@@ -113,11 +107,30 @@ function prevYear(year) {
 
 function makePeriodLabel() {
   const { mode, year, startMonth, endMonth } = state;
-  if (mode === 'annual')     return `${year}年`;
-  if (mode === 'monthly')    return `${year}年${endMonth}月`;
-  return startMonth === endMonth
-    ? `${year}年${startMonth}月`
-    : `${year}年${startMonth}〜${endMonth}月累計`;
+  return StatsCalc.periodLabel(mode, year, getAvailableMonths(year), startMonth, endMonth);
+}
+
+/** 前年側の期間ラベル（同じ月の範囲であることを明示） */
+function makePrevPeriodLabel() {
+  const { mode, year, startMonth, endMonth } = state;
+  const prev = prevYear(year);
+  if (StatsCalc.isPartialYear(mode, getAvailableMonths(year))) return `${prev}年（1〜${Math.max(...getAvailableMonths(year))}月）`;
+  return StatsCalc.periodLabel(mode, prev, getAvailableMonths(prev), startMonth, endMonth);
+}
+
+/** 比較の注記・欠損の警告（要約欄の下に表示） */
+function periodNotes(entity) {
+  const { mode, year } = state;
+  const prev = prevYear(year);
+  const notes = [];
+  if (StatsCalc.isPartialYear(mode, getAvailableMonths(year))) {
+    const last = Math.max(...getAvailableMonths(year));
+    notes.push(`${year}年は${last}月までの公表のため、前年も1〜${last}月の同じ期間で比較しています。`);
+  }
+  const mc = missingFor(entity, year), mp = missingFor(entity, prev);
+  if (mc.length) notes.push(`⚠ ${year}年${mc.join('・')}月のデータが無いため、この期間の値は算出していません。`);
+  if (mp.length) notes.push(`⚠ ${prev}年${mp.join('・')}月のデータが無いため、前年比は算出していません。`);
+  return notes;
 }
 
 // ─── カスタム凡例（線＋丸）ビルダー ──────────────────────────────────────────
@@ -332,26 +345,32 @@ function updateSummary() {
   const total = getValue('総数', year, mode, startMonth, endMonth);
   const p = pctOf(cur, pv);
   const name = country === '総数' ? '訪日客数（総数）' : `${country}からの訪日客数`;
-  const cmp = mode === 'monthly' ? '前年同月比' : mode === 'annual' ? '前年比' : '前年同期比';
+  const cmp = mode === 'monthly' ? '前年同月比'
+    : (mode === 'annual' && !StatsCalc.isPartialYear(mode, getAvailableMonths(year))) ? '前年比' : '前年同期比';
 
   const rows = COUNTRIES_ORDER.filter(c => data.monthly[c] && c !== 'その他')
     .map(c => ({ c, v: getValue(c, year, mode, startMonth, endMonth) })).filter(r => r.v != null)
     .sort((a, b) => b.v - a.v);
   const rank = country === '総数' ? null : rows.findIndex(r => r.c === country) + 1;
 
-  const lines = [`${label}の${name}は${fmt(cur)}人${p == null ? '' : `（${cmp}${pctTxt(p)}）`}。`];
-  if (country !== '総数' && rank) lines.push(`国・地域別では${rows.length}か国・地域中${rank}位、全体に占めるシェアは${(cur / total * 100).toFixed(1)}%。`);
+  const lines = [cur == null
+    ? `${label}の${name}は、期間内にデータが無い月があるため算出していません。`
+    : `${label}の${name}は${fmt(cur)}人${p == null ? '' : `（${cmp}${pctTxt(p)}）`}。`];
+  if (country !== '総数' && cur == null) { /* 欠損のため2文目は出さない */ }
+  else if (country !== '総数' && rank && total) lines.push(`国・地域別では${rows.length}か国・地域中${rank}位、全体に占めるシェアは${(cur / total * 100).toFixed(1)}%。`);
   else {
     const neg = COUNTRIES_ORDER.filter(c => data.monthly[c] && c !== 'その他')
       .filter(c => { const a = getValue(c, year, mode, startMonth, endMonth), b = getValue(c, prev, mode, startMonth, endMonth); return a != null && b && a < b; });
     lines.push(neg.length === 0 ? '主要国・地域は全て前年を上回った。'
       : neg.length <= 3 ? `前年を下回ったのは${neg.join('、')}。` : `前年を下回ったのは${neg.length}か国・地域。`);
   }
-  document.getElementById('inb-msg').innerHTML = lines.map(t => `<p>${t}</p>`).join('');
+  const notes = periodNotes(country);
+  document.getElementById('inb-msg').innerHTML = lines.map(t => `<p>${t}</p>`).join('')
+    + notes.map(t => `<p class="inb-note-line${t.startsWith('⚠') ? ' warn' : ''}">${t}</p>`).join('');
 
   const tiles = [
     { lbl: `${label}`, val: fmt(cur), unit: '人', p },
-    { lbl: mode === 'monthly' ? `前年同月（${prev}年${endMonth}月）` : mode === 'annual' ? `前年（${prev}年）` : `前年同期（${prev}年）`, val: fmt(pv), unit: '人', note: pv != null && cur != null ? `前年差 ${cur >= pv ? '+' : '△'}${fmt(Math.abs(cur - pv))}人` : '—' },
+    { lbl: `${mode === 'monthly' ? '前年同月' : '前年同期'}：${makePrevPeriodLabel()}`, val: fmt(pv), unit: '人', note: pv != null && cur != null ? `前年差 ${cur >= pv ? '+' : '△'}${fmt(Math.abs(cur - pv))}人` : '—' },
     country === '総数'
       ? { lbl: '国・地域数（前年比プラス）', val: String(rows.filter(r => { const b = getValue(r.c, prev, mode, startMonth, endMonth); return b && r.v >= b; }).length), unit: `/${rows.length}`, note: '「その他」を除く' }
       : { lbl: '全体に占めるシェア', val: total ? (cur / total * 100).toFixed(1) : '—', unit: '%', note: `総数 ${fmt(total)}人` },
@@ -421,8 +440,8 @@ function updateBarChart() {
   const label = makePeriodLabel();
   document.getElementById('bar-label').textContent = label;
   document.getElementById('bar-title').textContent = `国・地域別 訪日客数（${label}）`;
-  document.getElementById('bar-yoy-title').textContent =
-    mode === 'monthly' ? '前年同月比' : mode === 'annual' ? '前年比' : '前年同期比';
+  document.getElementById('bar-yoy-title').textContent = mode === 'monthly' ? '前年同月比'
+    : (mode === 'annual' && !StatsCalc.isPartialYear(mode, getAvailableMonths(year))) ? '前年比' : `前年同期比（${makePrevPeriodLabel()}比）`;
 
   const hbar = (extra) => {
     const o = inbBaseOptions({ indexAxis: 'y' });
@@ -479,7 +498,7 @@ function updateTable() {
   const thCur  = document.getElementById('th-year-cur');
   const thPrev = document.getElementById('th-year-prev');
   if (thCur)  thCur.textContent  = `${year}年`;
-  if (thPrev) thPrev.textContent = `${prev}年`;
+  if (thPrev) thPrev.textContent = StatsCalc.isPartialYear(mode, getAvailableMonths(year)) ? makePrevPeriodLabel() : `${prev}年`;
 
   document.getElementById('table-label').textContent = makePeriodLabel();
 

@@ -92,6 +92,9 @@ tr.me td { background: var(--highlight); font-weight: 700; }
 .hbar { height: 10px; border-radius: 0 4px 4px 0; background: var(--y2026); }
 .up { color: var(--pos-text); } .down { color: var(--neg-text); }
 .table-scroll { overflow-x: auto; }
+.caveat { margin-top: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; font-size: 12.5px; color: var(--ink-2); }
+.caveat summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+.caveat ul { margin: 8px 0 0; padding-left: 1.2em; line-height: 1.75; }
 footer { color: var(--muted); font-size: 12px; padding: 16px 0 32px; border-top: 1px solid var(--border); }
 @media (max-width: 900px) {
   .kpis { grid-template-columns: repeat(2, 1fr); }
@@ -144,13 +147,15 @@ footer { color: var(--muted); font-size: 12px; padding: 16px 0 32px; border-top:
     <div class="grid">
       <div class="card"><h3>全国のインバウンド延べ宿泊者数</h3><div class="note">単位：人泊（2026年は速報値）</div><div class="legend" id="lg-stay-m"></div>
         <div class="chart"><canvas id="c-stay-m"></canvas></div></div>
-      <div class="card"><h3>訪日客1人あたり平均宿泊数</h3><div class="note">外国人延べ宿泊者数 ÷ 訪日客数（泊）</div><div class="legend" id="lg-stay-a"></div>
+      <div class="card"><h3>訪日客1人あたり平均宿泊数</h3><div class="note">外国人延べ宿泊者数 ÷ 訪日客数（泊）。推計の参考指標で、旅行者の実際の平均滞在日数ではありません</div><div class="legend" id="lg-stay-a"></div>
         <div class="chart"><canvas id="c-stay-a"></canvas></div></div>
       <div class="card"><h3 id="h-stay-c"></h3><div class="note">単位：人泊（客室数20室以上の施設）</div>
         <div class="chart tall"><canvas id="c-stay-c"></canvas></div></div>
       <div class="card"><h3>前年同期比</h3><div class="note">増減率（%）・左と同じ並び</div>
         <div class="chart tall"><canvas id="c-stay-cy"></canvas></div></div>
     </div>
+
+    <details class="caveat" open><summary>データについての注意</summary><ul><li><b>2026年は速報値</b>（第2次速報）、2025年以前は確定値です。速報値は後日改定されることがあります。</li><li><b>2026年1月分から推計方法が変わっています。</b>観光庁は推計の層化基準を「従業者数」から「客室数」に変更しており、2026年と2025年以前は厳密には同じ基準の数値ではありません。前年比は目安としてご覧ください。</li><li>国籍別の宿泊数は「参考第1表」の数値で、<b>客室数20室以上の施設だけ</b>が対象です（簡易宿所・民泊など小規模な施設は含まない）。そのため国籍別の合計は、全施設を対象とする外国人延べ宿泊者数（総数）より少なくなります。2026年新設の国籍区分（メキシコ・北欧地域・中東地域）は前年と比べられるよう「その他」に含めています。</li><li><b>平均泊数</b>は「外国人延べ宿泊者数 ÷ 訪日客数」で計算した<b>推計の参考指標</b>です。延べ宿泊者数は宿泊施設側の統計で、親族・知人宅への滞在など宿泊施設を利用しない日数は含まれず、訪日客数（入国者の統計）とは対象が一致しません。<b>個々の旅行者の実際の平均滞在日数ではありません。</b></li></ul></details>
   </section>
 
   <!-- 広島県の宿泊 -->
@@ -167,6 +172,8 @@ footer { color: var(--muted); font-size: 12px; padding: 16px 0 32px; border-top:
         <select id="sel-hiro"></select></div><div class="legend" id="lg-hiro-h"></div>
         <div class="chart"><canvas id="c-hiro-h"></canvas></div></div>
     </div>
+
+    <details class="caveat" open><summary>データについての注意</summary><ul><li><b>2026年は速報値</b>（第2次速報）、2025年以前は確定値です。速報値は後日改定されることがあります。</li><li><b>2026年1月分から推計方法が変わっています。</b>観光庁は推計の層化基準を「従業者数」から「客室数」に変更しており、2026年と2025年以前は厳密には同じ基準の数値ではありません。前年比は目安としてご覧ください。</li><li>国籍別の宿泊数は「参考第1表」の数値で、<b>客室数20室以上の施設だけ</b>が対象です（簡易宿所・民泊など小規模な施設は含まない）。そのため国籍別の合計は、全施設を対象とする外国人延べ宿泊者数（総数）より少なくなります。2026年新設の国籍区分（メキシコ・北欧地域・中東地域）は前年と比べられるよう「その他」に含めています。</li></ul></details>
   </section>
 
   <!-- 都道府県 -->
@@ -179,6 +186,8 @@ footer { color: var(--muted); font-size: 12px; padding: 16px 0 32px; border-top:
       <div class="card full"><h3 id="h-pref-t"></h3><div class="note">列名クリックで並べ替え。行クリックで上のグラフに表示</div>
         <div class="table-scroll"><table id="t-pref"></table></div></div>
     </div>
+
+    <details class="caveat" open><summary>データについての注意</summary><ul><li><b>2026年は速報値</b>（第2次速報）、2025年以前は確定値です。速報値は後日改定されることがあります。</li><li><b>2026年1月分から推計方法が変わっています。</b>観光庁は推計の層化基準を「従業者数」から「客室数」に変更しており、2026年と2025年以前は厳密には同じ基準の数値ではありません。前年比は目安としてご覧ください。</li></ul></details>
   </section>
 
   <!-- 広島空港 -->
@@ -344,7 +353,8 @@ function renderHeader() {
     ${t.badge ? `<span class="badge">${t.badge}</span>` : ''}</div></div>`).join('');
   document.getElementById('footer').innerHTML =
     `出典：日本政府観光局（JNTO）訪日外客統計（${RD.sources.jnto}）／観光庁 宿泊旅行統計調査（推移表・参考第1表）／出入国在留管理庁 出入国管理統計。
-     2026年の宿泊統計は速報値。国籍別宿泊の「その他」には2026年から新設のメキシコ・北欧地域・中東地域を含む。`;
+     2026年の宿泊統計は速報値（2026年1月分から推計の層化基準を変更）。国籍別宿泊は客室数20室以上の施設が対象で、「その他」には2026年新設のメキシコ・北欧地域・中東地域を含む。
+     JNTOの直近月は推計値。前年比は同じ月の範囲で比較し、期間内に欠損月がある場合は算出しない。`;
 }
 
 // ───── 各タブ ─────
