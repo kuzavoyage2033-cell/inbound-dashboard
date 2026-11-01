@@ -719,7 +719,7 @@ function onShowStayPref() {
 
 async function initStay() {
   try {
-    const res = await fetch('data/stay.json');
+    const res = await fetch('data/stay.json', { cache: 'no-cache' });
     stayData  = await res.json();
   } catch (e) {
     ['tab-stay-country', 'tab-stay-pref'].forEach(id => {

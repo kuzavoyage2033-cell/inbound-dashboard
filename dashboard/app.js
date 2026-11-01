@@ -514,7 +514,7 @@ function updateAll() {
 
 async function init() {
   try {
-    const res = await fetch('data/inbound.json');
+    const res = await fetch('data/inbound.json', { cache: 'no-cache' });
     data = await res.json();
   } catch (e) {
     document.getElementById('tab-inbound').innerHTML =
